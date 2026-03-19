@@ -63,7 +63,7 @@ python app.py
 ### Step 5: Deploy / Go Live
 
 1. Click the green **Run** button
-2. Replit will give you a public URL like: `https://ttest-app.yourname.repl.co`
+2. Replit will give you a public URL like: `https://two-sample-t-test--muskaanjaggi.replit.app/`
 3. Share that URL — your app is live!
 
 ---
