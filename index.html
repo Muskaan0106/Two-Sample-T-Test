@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Two-Sample T-Test</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #13161e;
+      --card: #1a1e2a;
+      --border: #252a38;
+      --accent: #7ee8a2;
+      --accent2: #5bc8f5;
+      --warn: #f97b6b;
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --mono: 'DM Mono', monospace;
+      --serif: 'Fraunces', Georgia, serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 60vw;
+      height: 60vw;
+      background: radial-gradient(ellipse at center, rgba(126,232,162,0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -15%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(ellipse at center, rgba(91,200,245,0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      max-width: 780px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      margin-bottom: 3rem;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid rgba(126,232,162,0.3);
+      padding: 0.25rem 0.75rem;
+      border-radius: 2px;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-weight: 700;
+      font-size: clamp(2rem, 5vw, 3rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    h1 em {
+      font-style: italic;
+      font-weight: 300;
+      color: var(--accent2);
+    }
+
+    .subtitle {
+      margin-top: 0.75rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .card:nth-child(2) { animation-delay: 0.1s; }
+    .card:nth-child(3) { animation-delay: 0.2s; }
+
+    .card-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .card-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 560px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+
+    textarea, select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      padding: 0.75rem 1rem;
+      transition: border-color 0.2s;
+      outline: none;
+      resize: vertical;
+    }
+
+    textarea { min-height: 80px; }
+
+    textarea:focus, select:focus {
+      border-color: rgba(126,232,162,0.5);
+      box-shadow: 0 0 0 3px rgba(126,232,162,0.06);
+    }
+
+    .hint {
+      margin-top: 0.4rem;
+      font-size: 0.68rem;
+      color: var(--muted);
+      opacity: 0.7;
+    }
+
+    .select-row {
+      margin-top: 1.25rem;
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.5rem;
+      cursor: pointer;
+    }
+
+    .run-btn {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 0.9rem;
+      background: var(--accent);
+      color: #0d0f14;
+      border: none;
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .run-btn:hover {
+      background: #9bf5bc;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 24px rgba(126,232,162,0.25);
+    }
+
+    .run-btn:active { transform: translateY(0); }
+
+    .run-btn.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    /* Results */
+    #results {
+      display: none;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+    }
+
+    .stat-name {
+      font-size: 0.63rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .stat-value {
+      font-size: 1.05rem;
+      color: var(--accent2);
+      letter-spacing: -0.01em;
+    }
+
+    .divider-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 1.25rem 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .divider-label::before, .divider-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .conclusion-box {
+      border-radius: 6px;
+      padding: 1.1rem 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.88rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .conclusion-box.reject {
+      background: rgba(249,123,107,0.1);
+      border: 1px solid rgba(249,123,107,0.3);
+      color: var(--warn);
+    }
+
+    .conclusion-box.fail {
+      background: rgba(126,232,162,0.08);
+      border: 1px solid rgba(126,232,162,0.25);
+      color: var(--accent);
+    }
+
+    .icon { font-size: 1.3rem; }
+
+    .error-box {
+      background: rgba(249,123,107,0.08);
+      border: 1px solid rgba(249,123,107,0.25);
+      border-radius: 6px;
+      padding: 0.9rem 1.2rem;
+      color: var(--warn);
+      font-size: 0.8rem;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .scipy-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header>
+      <div class="tag">Statistical Testing</div>
+      <h1>Two-Sample<br/><em>T-Test</em></h1>
+      <p class="subtitle">Welch's independent samples — α = 0.05</p>
+    </header>
+
+    <div class="card">
+      <div class="card-label">Input Samples</div>
+      <div class="grid-2">
+        <div>
+          <label>Sample A</label>
+          <textarea id="sampleA" placeholder="12.5, 14.2, 13.8, 15.1, 11.9"></textarea>
+          <p class="hint">Comma-separated numbers</p>
+        </div>
+        <div>
+          <label>Sample B</label>
+          <textarea id="sampleB" placeholder="10.3, 11.7, 12.0, 9.8, 13.2"></textarea>
+          <p class="hint">Comma-separated numbers</p>
+        </div>
+      </div>
+
+      <div class="select-row">
+        <label>Alternative Hypothesis</label>
+        <select id="alternative">
+          <option value="two-sided">Two-sided (μ₁ ≠ μ₂)</option>
+          <option value="right">Right-tailed (μ₁ > μ₂)</option>
+          <option value="left">Left-tailed (μ₁ < μ₂)</option>
+        </select>
+      </div>
+
+      <button class="run-btn" id="runBtn" onclick="runTest()">
+        ▶ &nbsp;Run T-Test
+      </button>
+      <div class="error-box" id="errorBox"></div>
+    </div>
+
+    <div id="results">
+      <div class="card">
+        <div class="card-label">Descriptive Statistics</div>
+        <div class="result-grid">
+          <div class="stat-block"><div class="stat-name">n₁</div><div class="stat-value" id="r-n1">—</div></div>
+          <div class="stat-block"><div class="stat-name">n₂</div><div class="stat-value" id="r-n2">—</div></div>
+          <div class="stat-block"><div class="stat-name">x̄₁</div><div class="stat-value" id="r-mean1">—</div></div>
+          <div class="stat-block"><div class="stat-name">x̄₂</div><div class="stat-value" id="r-mean2">—</div></div>
+          <div class="stat-block"><div class="stat-name">SD₁</div><div class="stat-value" id="r-sd1">—</div></div>
+          <div class="stat-block"><div class="stat-name">SD₂</div><div class="stat-value" id="r-sd2">—</div></div>
+          <div class="stat-block"><div class="stat-name">Std. Error</div><div class="stat-value" id="r-se">—</div></div>
+          <div class="stat-block"><div class="stat-name">Deg. Freedom</div><div class="stat-value" id="r-df">—</div></div>
+        </div>
+
+        <div class="divider-label">Test Statistics</div>
+        <div class="result-grid">
+          <div class="stat-block"><div class="stat-name">t critical (+)</div><div class="stat-value" id="r-tcpos">—</div></div>
+          <div class="stat-block"><div class="stat-name">t critical (−)</div><div class="stat-value" id="r-tcneg">—</div></div>
+          <div class="stat-block"><div class="stat-name">t calculated</div><div class="stat-value" id="r-tcal">—</div></div>
+          <div class="stat-block"><div class="stat-name">p-value</div><div class="stat-value" id="r-pval">—</div></div>
+        </div>
+
+        <div class="divider-label">SciPy Verification</div>
+        <div class="scipy-row">
+          <div class="stat-block"><div class="stat-name">scipy t-stat</div><div class="stat-value" id="r-sct">—</div></div>
+          <div class="stat-block"><div class="stat-name">scipy p-value</div><div class="stat-value" id="r-scp">—</div></div>
+        </div>
+
+        <div class="divider-label">Conclusion</div>
+        <div class="conclusion-box" id="r-conclusion"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function runTest() {
+      const btn = document.getElementById('runBtn');
+      const errBox = document.getElementById('errorBox');
+      errBox.style.display = 'none';
+      btn.classList.add('loading');
+      btn.textContent = '⏳  Computing…';
+
+      const payload = {
+        sample_a: document.getElementById('sampleA').value,
+        sample_b: document.getElementById('sampleB').value,
+        alternative: document.getElementById('alternative').value
+      };
+
+      try {
+        const res = await fetch('/compute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          errBox.textContent = '⚠ ' + data.error;
+          errBox.style.display = 'block';
+        } else {
+          populate(data);
+          document.getElementById('results').style.display = 'block';
+          document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } catch (e) {
+        errBox.textContent = '⚠ Network error: ' + e.message;
+        errBox.style.display = 'block';
+      }
+
+      btn.classList.remove('loading');
+      btn.innerHTML = '▶ &nbsp;Run T-Test';
+    }
+
+    function populate(d) {
+      document.getElementById('r-n1').textContent = d.n1;
+      document.getElementById('r-n2').textContent = d.n2;
+      document.getElementById('r-mean1').textContent = d.mean1;
+      document.getElementById('r-mean2').textContent = d.mean2;
+      document.getElementById('r-sd1').textContent = d.sd1;
+      document.getElementById('r-sd2').textContent = d.sd2;
+      document.getElementById('r-se').textContent = d.se;
+      document.getElementById('r-df').textContent = d.df;
+      document.getElementById('r-tcpos').textContent = d.t_critical_pos;
+      document.getElementById('r-tcneg').textContent = d.t_critical_neg;
+      document.getElementById('r-tcal').textContent = d.t_calculated;
+      document.getElementById('r-pval').textContent = d.p_value;
+      document.getElementById('r-sct').textContent = d.scipy_t_stat;
+      document.getElementById('r-scp').textContent = d.scipy_p_value;
+
+      const cBox = document.getElementById('r-conclusion');
+      const isReject = d.conclusion.includes('Reject') && !d.conclusion.includes('Fail');
+      cBox.className = 'conclusion-box ' + (isReject ? 'reject' : 'fail');
+      cBox.innerHTML = `<span class="icon">${isReject ? '✗' : '✓'}</span> ${d.conclusion} — p = ${d.p_value}`;
+    }
+  </script>
+</body>
+</html>
